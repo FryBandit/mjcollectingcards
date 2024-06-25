@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<!-- saved from url=(0058)file:///Users/kylerjadenmitchell/Downloads/Untitled-1.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Card Pack Opener</title>
+    <script src="./Trading Card Pack Opener_files/jquery.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #000000;
+            padding: 20px;
+            color: #ffcc00;
+        }
+        .container {
+            text-align: center;
+            background-color: #001f3f;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        #cardContainer, #collectionContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .card {
+            width: 100px;
+            height: 140px;
+            margin: 10px;
+            perspective: 1000px;
+            cursor: pointer;
+            position: relative;
+        }
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+        }
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .card-front {
+            background-color: #6c757d;
+        }
+        .card-back {
+            background-color: white;
+            transform: rotateY(180deg);
+        }
+        .card-back img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .card-count {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 2px 5px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+        .sell-button {
+            position: absolute;
+            left: 5px;
+            bottom: 5px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 2px 5px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .expand-button {
+            position: absolute;
+            right: 5px;
+            bottom: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 2px 5px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        #collectionToggle, #resetButton {
+            margin-top: 20px;
+        }
+        #collectionView {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+        }
+        .pack-button {
+            margin: 5px;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .pack-button:hover {
+            background-color: #0056b3;
+        }
+        .rarity-banner {
+            position: absolute;
+            top: 5px;
+            left: 0;
+            right: 0;
+            padding: 2px;
+            font-size: 10px;
+            color: white;
+            text-align: center;
+        }
+        .rarity-common { background-color: #B0B0B0; }
+        .rarity-uncommon { background-color: #30A030; }
+        .rarity-rare { background-color: #3030A0; }
+        .rarity-super-rare { background-color: #A030A0; }
+        .rarity-mythic { background-color: #D4AF37; }
+
+        @keyframes super-rare-animation {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(5deg); }
+            75% { transform: rotate(-5deg); }
+            100% { transform: rotate(0deg); }
+        }
+        @keyframes mythic-face-down {
+            0% { transform: rotateY(0); }
+            50% { transform: rotateY(90deg); }
+            100% { transform: rotateY(180deg); }
+        }
+        @keyframes mythic-pull {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.5); }
+            100% { transform: scale(1); }
+        }
+        .super-rare { animation: super-rare-animation 1s infinite; }
+        .mythic { animation: mythic-face-down 1s, mythic-pull 1s; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 10px;
+            position: relative;
+        }
+        .modal-content img {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .pack-opening-screen {
+            display: none;
+            position: fixed;
+            z-index: 2;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .pack-opening-content {
+            background-color: #fefefe;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .pack-opening-content button {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Trading Card Pack Opener</h1>
+        <button class="pack-button" data-pack="basic">Open Basic Pack (10 coins)</button>
+        <button class="pack-button" data-pack="premium">Open Premium Pack (25 coins)</button>
+        <button class="pack-button" data-pack="ultimate">Open Ultimate Pack (50 coins)</button>
+        <button class="pack-button" data-pack="legendary">Open Legendary Pack (100 coins)</button>
+        <button class="pack-button" data-pack="basicBooster">Open Basic Booster (45 coins)</button>
+        <button class="pack-button" data-pack="premiumBooster">Open Premium Booster (110 coins)</button>
+        <div id="cardContainer"><div class="card common flipped" data-id="1" data-rarity="common">
+                            <div class="card-inner">
+                                <div class="card-front"></div>
+                                <div class="card-back">
+                                    <img src="./Trading Card Pack Opener_files/0_0.png" alt="Common Card 1" title="Common Card 1 (common)">
+                                    <div class="rarity-banner rarity-common">common</div>
+                                    <div class="card-count">1</div>
+                                    <button class="expand-button">Expand</button>
+                                </div>
+                            </div>
+                        </div><div class="card common flipped" data-id="2" data-rarity="common">
+                            <div class="card-inner">
+                                <div class="card-front"></div>
+                                <div class="card-back">
+                                    <img src="./Trading Card Pack Opener_files/0_2.png" alt="Common Card 2" title="Common Card 2 (common)">
+                                    <div class="rarity-banner rarity-common">common</div>
+                                    <div class="card-count">1</div>
+                                    <button class="expand-button">Expand</button>
+                                </div>
+                            </div>
+                        </div><div class="card common flipped" data-id="1" data-rarity="common">
+                            <div class="card-inner">
+                                <div class="card-front"></div>
+                                <div class="card-back">
+                                    <img src="./Trading Card Pack Opener_files/0_0.png" alt="Common Card 1" title="Common Card 1 (common)">
+                                    <div class="rarity-banner rarity-common">common</div>
+                                    <div class="card-count">1</div>
+                                    <button class="expand-button">Expand</button>
+                                </div>
+                            </div>
+                        </div><div class="card common flipped" data-id="1" data-rarity="common">
+                            <div class="card-inner">
+                                <div class="card-front"></div>
+                                <div class="card-back">
+                                    <img src="./Trading Card Pack Opener_files/0_0.png" alt="Common Card 1" title="Common Card 1 (common)">
+                                    <div class="rarity-banner rarity-common">common</div>
+                                    <div class="card-count">1</div>
+                                    <button class="expand-button">Expand</button>
+                                </div>
+                            </div>
+                        </div><div class="card super-rare flipped" data-id="5" data-rarity="super-rare">
+                            <div class="card-inner">
+                                <div class="card-front"></div>
+                                <div class="card-back">
+                                    <img src="./Trading Card Pack Opener_files/0_2(1).png" alt="Super Rare Card" title="Super Rare Card (super-rare)">
+                                    <div class="rarity-banner rarity-super-rare">super-rare</div>
+                                    <div class="card-count">1</div>
+                                    <button class="expand-button">Expand</button>
+                                </div>
+                            </div>
+                        </div></div>
+        <p>Unique cards found: <span id="uniqueCount">3</span> / <span id="totalUniqueCards">6</span></p>
+        <p>Coins: <span id="coinCount">515</span></p>
+    </div>
+    <button id="collectionToggle">View Collection</button>
+    <button id="resetButton">Reset Game</button>
+    <div id="collectionView" style="display: block;">
+        <h2>Your Collection</h2>
+        <div id="collectionContainer"><div class="card flipped common" data-id="1" data-rarity="common">
+                        <div class="card-inner">
+                            <div class="card-front"></div>
+                            <div class="card-back">
+                                <img src="./Trading Card Pack Opener_files/0_0.png" alt="Common Card 1" title="Common Card 1 (common)">
+                                <div class="rarity-banner rarity-common">common</div>
+                                <div class="card-count">x3</div>
+                                <button class="sell-button">Sell</button>
+                                <button class="expand-button">Expand</button>
+                            </div>
+                        </div>
+                    </div><div class="card flipped common" data-id="2" data-rarity="common">
+                        <div class="card-inner">
+                            <div class="card-front"></div>
+                            <div class="card-back">
+                                <img src="./Trading Card Pack Opener_files/0_2.png" alt="Common Card 2" title="Common Card 2 (common)">
+                                <div class="rarity-banner rarity-common">common</div>
+                                <div class="card-count">x1</div>
+                                <button class="sell-button">Sell</button>
+                                <button class="expand-button">Expand</button>
+                            </div>
+                        </div>
+                    </div><div class="card flipped super-rare" data-id="5" data-rarity="super-rare">
+                        <div class="card-inner">
+                            <div class="card-front"></div>
+                            <div class="card-back">
+                                <img src="./Trading Card Pack Opener_files/0_2(1).png" alt="Super Rare Card" title="Super Rare Card (super-rare)">
+                                <div class="rarity-banner rarity-super-rare">super-rare</div>
+                                <div class="card-count">x1</div>
+                                <button class="sell-button">Sell</button>
+                                <button class="expand-button">Expand</button>
+                            </div>
+                        </div>
+                    </div></div>
+    </div>
+    <div id="myModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close">×</span>
+            <img id="modalImage" src="./Trading Card Pack Opener_files/0_2(1).png" alt="Expanded Card">
+        </div>
+    </div>
+    <div id="packOpeningScreen" class="pack-opening-screen" style="display: none;">
+        <div class="pack-opening-content">
+            <h2>Confirm Pack Opening</h2>
+            <p>Pack probabilities:</p>
+            <ul id="packProbabilities"><li>common: 70.00%</li><li>uncommon: 20.00%</li><li>rare: 5.00%</li><li>super-rare: 4.00%</li><li>mythic: 1.00%</li></ul>
+            <button id="confirmPackOpening">Confirm</button>
+            <button id="cancelPackOpening">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        const cards = [
+            { id: 1, name: "Common Card 1", url: "https://cdn.midjourney.com/69615c80-8069-497d-8063-c1b3efc4f4f8/0_0.png", rarity: "common", value: 5 },
+            { id: 2, name: "Common Card 2", url: "https://cdn.midjourney.com/69615c80-8069-497d-8063-c1b3efc4f4f8/0_2.png", rarity: "common", value: 5 },
+            { id: 3, name: "Uncommon Card", url: "https://cdn.midjourney.com/1256c0a2-1e49-4ad8-894c-c3e36415884e/0_0.png", rarity: "uncommon", value: 10 },
+            { id: 4, name: "Rare Card", url: "https://cdn.midjourney.com/0ea12dc0-41b4-4e42-8231-197b705eb3bc/0_0.png", rarity: "rare", value: 25 },
+            { id: 5, name: "Super Rare Card", url: "https://cdn.midjourney.com/14fd290c-22aa-45cd-a1f0-17548b742607/0_2.png", rarity: "super-rare", value: 50 },
+            { id: 6, name: "Mythic Card", url: "https://cdn.midjourney.com/14fd290c-22aa-45cd-a1f0-17548b742607/0_0.png", rarity: "mythic", value: 100 }
+        ];
+
+        const packTypes = {
+            basic: {
+                cost: 10,
+                rarities: { common: 0.7, uncommon: 0.2, rare: 0.05, "super-rare": 0.04, mythic: 0.01 }
+            },
+            premium: {
+                cost: 25,
+                rarities: { common: 0.5, uncommon: 0.3, rare: 0.15, "super-rare": 0.04, mythic: 0.01 }
+            },
+            ultimate: {
+                cost: 50,
+                rarities: { common: 0.2, uncommon: 0.3, rare: 0.3, "super-rare": 0.15, mythic: 0.05 }
+            },
+            legendary: {
+                cost: 100,
+                rarities: { common: 0.1, uncommon: 0.2, rare: 0.3, "super-rare": 0.3, mythic: 0.1 }
+            },
+            basicBooster: {
+                cost: 45,
+                rarities: { common: 0.7, uncommon: 0.2, rare: 0.05, "super-rare": 0.04, mythic: 0.01 }
+            },
+            premiumBooster: {
+                cost: 110,
+                rarities: { common: 0.5, uncommon: 0.3, rare: 0.15, "super-rare": 0.04, mythic: 0.01 }
+            }
+        };
+
+        let collection = {};
+        let coins = 50;
+
+        function getRandomCard(packRarities, guaranteeRare = false) {
+            if (guaranteeRare) {
+                const rareAndAbove = ['rare', 'super-rare', 'mythic'];
+                const rarity = rareAndAbove[Math.floor(Math.random() * rareAndAbove.length)];
+                return cards.filter(card => card.rarity === rarity)[Math.floor(Math.random() * cards.filter(card => card.rarity === rarity).length)];
+            }
+
+            const rand = Math.random();
+            let rarity;
+            let cumulativeProbability = 0;
+            for (const [r, probability] of Object.entries(packRarities)) {
+                cumulativeProbability += probability;
+                if (rand < cumulativeProbability) {
+                    rarity = r;
+                    break;
+                }
+            }
+            return cards.filter(card => card.rarity === rarity)[Math.floor(Math.random() * cards.filter(card => card.rarity === rarity).length)];
+        }
+
+        function openPack(packType) {
+            const pack = packTypes[packType];
+            if (coins < pack.cost) {
+                alert("Not enough coins to open this pack!");
+                return;
+            }
+
+            // Display the pack opening screen with probabilities
+            $('#packOpeningScreen').css('display', 'flex');
+            $('#packProbabilities').empty();
+            for (const [rarity, probability] of Object.entries(pack.rarities)) {
+                $('#packProbabilities').append(`<li>${rarity}: ${(probability * 100).toFixed(2)}%</li>`);
+            }
+
+            $('#confirmPackOpening').one('click', function() {
+                $('#packOpeningScreen').css('display', 'none');
+                
+                coins -= pack.cost;
+                updateCoinCount();
+
+                const cardContainer = $('#cardContainer');
+                cardContainer.empty();
+
+                const packSize = (packType.includes("Booster")) ? 5 * 5 : 5;
+                for (let i = 0; i < packSize; i++) {
+                    const card = (packType === 'ultimate' && i === 4) ? getRandomCard(pack.rarities, true) : getRandomCard(pack.rarities);
+                    const cardElement = $(`
+                        <div class="card ${card.rarity}" data-id="${card.id}" data-rarity="${card.rarity}">
+                            <div class="card-inner">
+                                <div class="card-front"></div>
+                                <div class="card-back">
+                                    <img src="${card.url}" alt="${card.name}" title="${card.name} (${card.rarity})">
+                                    <div class="rarity-banner rarity-${card.rarity}">${card.rarity}</div>
+                                    <div class="card-count">${collection[card.id] ? collection[card.id].count + 1 : 1}</div>
+                                    <button class="expand-button">Expand</button>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                    cardContainer.append(cardElement);
+                }
+            });
+
+            $('#cancelPackOpening').one('click', function() {
+                $('#packOpeningScreen').css('display', 'none');
+            });
+        }
+
+        function flipCard(cardElement) {
+            cardElement.toggleClass('flipped');
+            const cardId = cardElement.data('id');
+            const rarity = cardElement.data('rarity');
+            if (cardElement.hasClass('flipped')) {
+                if (collection[cardId]) {
+                    collection[cardId].count++;
+                } else {
+                    collection[cardId] = {...cards.find(card => card.id === cardId), count: 1};
+                }
+                updateUniqueCount();
+                updateCollectionView();
+            }
+        }
+
+        function updateUniqueCount() {
+            $('#uniqueCount').text(Object.keys(collection).length);
+        }
+
+        function updateCoinCount() {
+            $('#coinCount').text(coins);
+        }
+
+        function updateCollectionView() {
+            const collectionContainer = $('#collectionContainer');
+            collectionContainer.empty();
+            Object.values(collection).forEach(card => {
+                const cardElement = $(`
+                    <div class="card flipped ${card.rarity}" data-id="${card.id}" data-rarity="${card.rarity}">
+                        <div class="card-inner">
+                            <div class="card-front"></div>
+                            <div class="card-back">
+                                <img src="${card.url}" alt="${card.name}" title="${card.name} (${card.rarity})">
+                                <div class="rarity-banner rarity-${card.rarity}">${card.rarity}</div>
+                                <div class="card-count">x${card.count}</div>
+                                <button class="sell-button">Sell</button>
+                                <button class="expand-button">Expand</button>
+                            </div>
+                        </div>
+                    </div>
+                `);
+                collectionContainer.append(cardElement);
+            });
+        }
+
+        function sellCard(cardId) {
+            const card = collection[cardId];
+            if (card && card.count > 1) {
+                card.count--;
+                coins += card.value;
+            } else if (card && card.count === 1) {
+                delete collection[cardId];
+                coins += card.value;
+                updateUniqueCount();
+            }
+            updateCoinCount();
+            updateCollectionView();
+        }
+
+        function resetGame() {
+            if (confirm("Are you sure you want to reset your collection and coins?")) {
+                collection = {};
+                coins = 50;
+                updateUniqueCount();
+                updateCoinCount();
+                updateCollectionView();
+                $('#cardContainer').empty();
+            }
+        }
+
+        $('.pack-button').on('click', function() {
+            openPack($(this).data('pack'));
+        });
+        
+        $(document).on('click', '.card', function() {
+            flipCard($(this));
+        });
+
+        $(document).on('click', '.sell-button', function(e) {
+            e.stopPropagation();
+            const cardId = $(this).closest('.card').data('id');
+            sellCard(cardId);
+        });
+
+        $(document).on('click', '.expand-button', function(e) {
+            e.stopPropagation();
+            const imgUrl = $(this).siblings('img').attr('src');
+            $('#modalImage').attr('src', imgUrl);
+            $('#myModal').css('display', 'flex');
+        });
+
+        $('.close, #myModal').on('click', function(e) {
+            if (e.target !== this) return;
+            $('#myModal').css('display', 'none');
+        });
+
+        $('#collectionToggle').on('click', function() {
+            $('#collectionView').toggle();
+            updateCollectionView();
+        });
+
+        $('#resetButton').on('click', resetGame);
+
+        // Initialize total unique cards count
+        $('#totalUniqueCards').text(cards.length);
+    </script>
+
+
+</body></html>
